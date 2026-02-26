@@ -36,14 +36,34 @@ class RenderableCustomFactory {
 
                 val localObject = flutterArCoreNode.object3DFileName
                 if (localObject != null) {
-                    val builder = ModelRenderable.builder()
-                    builder.setSource(context, Uri.parse(localObject))
-                    builder.build().thenAccept { renderable ->
-                        handler(renderable, null)
-                    }.exceptionally { throwable ->
-                        Log.e(TAG, "Unable to load Renderable.", throwable);
-                        handler(null, throwable)
-                        return@exceptionally null
+                    if (localObject.endsWith(".glb") || localObject.endsWith(".gltf")) {
+                        val renderableSourceBuilder = RenderableSource.builder()
+                            .setSource(context, Uri.parse(localObject), 
+                                if (localObject.endsWith(".glb")) RenderableSource.SourceType.GLB else RenderableSource.SourceType.GLTF2)
+                            .setRecenterMode(RenderableSource.RecenterMode.ROOT)
+
+                        ModelRenderable.builder()
+                            .setSource(context, renderableSourceBuilder.build())
+                            .setRegistryId(localObject)
+                            .build()
+                            .thenAccept { renderable ->
+                                handler(renderable, null)
+                            }
+                            .exceptionally { throwable ->
+                                Log.e(TAG, "Unable to load GLB/GLTF Renderable.", throwable)
+                                handler(null, throwable)
+                                null
+                            }
+                    } else {
+                        val builder = ModelRenderable.builder()
+                        builder.setSource(context, Uri.parse(localObject))
+                        builder.build().thenAccept { renderable ->
+                            handler(renderable, null)
+                        }.exceptionally { throwable ->
+                            Log.e(TAG, "Unable to load Renderable.", throwable);
+                            handler(null, throwable)
+                            return@exceptionally null
+                        }
                     }
                 } else if (url != null) {
                     val modelRenderableBuilder = ModelRenderable.builder()
