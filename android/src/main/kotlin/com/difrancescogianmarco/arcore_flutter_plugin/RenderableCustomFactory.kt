@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import com.difrancescogianmarco.arcore_flutter_plugin.flutter_models.FlutterArCoreNode
 import com.google.ar.sceneform.assets.RenderableSource
@@ -123,8 +124,31 @@ class RenderableCustomFactory {
                             return@makeMaterial
                         }
                         try {
-                            val renderable = flutterArCoreNode.shape?.buildShape(material)
-                            handler(renderable, null)
+                            if (flutterArCoreNode.shape?.dartType == "ArCoreCartoon") {
+                                val textView = TextView(context)
+                                textView.text = when (flutterArCoreNode.shape.model) {
+                                    "robot" -> "🤖"
+                                    "ghost" -> "👻"
+                                    "alien" -> "👽"
+                                    "fox" -> "🦊"
+                                    "duck" -> "🦆"
+                                    else -> "🤖"
+                                }
+                                textView.textSize = 100f
+                                ViewRenderable.builder().setView(context, textView)
+                                        .build()
+                                        .thenAccept { renderable ->
+                                            handler(renderable, null)
+                                        }
+                                        .exceptionally { throwable ->
+                                            Log.e(TAG, "Unable to load cartoon renderable.", throwable)
+                                            handler(null, throwable)
+                                            return@exceptionally null
+                                        }
+                            } else {
+                                val renderable = flutterArCoreNode.shape?.buildShape(material)
+                                handler(renderable, null)
+                            }
                         } catch (ex: Exception) {
                             Log.e(TAG, "renderable error ${ex}")
                             handler(null, ex)
